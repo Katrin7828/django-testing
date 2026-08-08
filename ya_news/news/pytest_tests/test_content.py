@@ -45,7 +45,8 @@ def test_comments(client, news_setup):
     Comment.objects.filter(pk=c_new.pk).update(created=now)
     Comment.objects.filter(pk=c_mid.pk).update(
         created=now - timedelta(days=5))
-    Comment.objects.filter(pk=c_old.pk).update(created=now - timedelta(days=10))
+    Comment.objects.filter(pk=c_old.pk).update(
+        created=now - timedelta(days=10))
     response = client.get(reverse('news:detail', kwargs={'pk': news.pk}))
     news_obj = response.context['object']
     raw_comments = list(news_obj.comment_set.all())
