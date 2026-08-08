@@ -1,14 +1,15 @@
-from pytest_django.asserts import assertRedirects, assertFormError
+from pytest_django.asserts import assertRedirects
 
 from django.urls import reverse
 from django.contrib.auth import get_user_model
 
-from news.models import Comment, News
-from news.forms import BAD_WORDS, WARNING
+from news.models import Comment
+from news.forms import BAD_WORDS
 
 import pytest
 
 from http import HTTPStatus
+
 
 def test_user_can_create_comment(client, news):
     """Авторизованный пользователь может создать комментарий."""
