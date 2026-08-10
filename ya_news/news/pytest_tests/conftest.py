@@ -17,11 +17,8 @@ def news(db):
 
 
 @pytest.fixture
-def comment(db, news):
-    """Создаем комментарий от пользователя, привязанный к новости."""
-    User = get_user_model()
-    author = User.objects.create_user(username='comment_author',
-                                      password='pass')
+def comment(db, news, author):
+    """Создаем комментарий, привязанный к новости."""
     return Comment.objects.create(
         text='Текст тестового комментария',
         author=author,
@@ -74,9 +71,3 @@ def not_author_client(client, django_user_model):
     )
     client.force_login(other_user)
     return client
-
-
-@pytest.fixture
-def slug_for_args(news):
-    """Возвращает pk новости как отдельный аргумент для reverse."""
-    return news.pk

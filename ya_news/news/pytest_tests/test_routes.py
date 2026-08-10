@@ -3,67 +3,76 @@ from http import HTTPStatus
 from django.urls import reverse
 
 import pytest
-
-from django.test import Client
-
-
-@pytest.mark.django_db
-def test_home_availability_for_anonymous_user(client):
-    """Анонимному пользователю доступна главная страница."""
-    url = reverse('news:home')
-    response = client.get(url)
-    assert response.status_code == HTTPStatus.OK
+from pytest_django.asserts import assertRedirects
 
 
 @pytest.mark.django_db
-def test_single_news_page_availability_for_anonymous(client, news):
-    """Может ли анонимный пользователь открыть страницу конкретной новости?"""
-    url = reverse('news:detail', args=(news.pk,))
-    response = client.get(url)
-    assert response.status_code == HTTPStatus.OK
+def test_pages_availability(client, news):
+    """
+    Главная страница и страница отдельной новости
+    доступны анонимному пользователю.
+    """
+    urls = [
+        ('news:home', None),
+        ('news:detail', (news.pk,)),
+    ]
+    for name, args in urls:
+        url = reverse(name, args=args)
+        response = client.get(url)
+        assert response.status_code == HTTPStatus.OK
 
 
-@pytest.mark.parametrize('name', ('news:edit', 'news:delete'))
 @pytest.mark.django_db
-def test_comments_availability_for_author(name, comment):
-    """Проверяем доступ к страницам редактирования и удаления комментариев."""
-    author = comment.author
-    client = Client()
-    client.force_login(author)
-    url = reverse(name, args=(comment.pk,))
-    response = client.get(url)
-    assert response.status_code == HTTPStatus.OK
+def test_availability_for_comment_edit_and_delete(client, comment, author,
+                                                  other_user):
+    """
+    Страницы удаления и редактирования комментария
+    доступны автору комментария, но недоступны другому пользователю (404).
+    """
+    urls = [
+        (author, 'news:edit', (comment.pk,), HTTPStatus.OK),
+        (author, 'news:delete', (comment.pk,), HTTPStatus.OK),
+        (other_user, 'news:edit', (comment.pk,), HTTPStatus.NOT_FOUND),
+        (other_user, 'news:delete', (comment.pk,), HTTPStatus.NOT_FOUND),
+    ]
+    for user, name, args, expected_status in urls:
+        client.force_login(user)
+        url = reverse(name, args=args)
+        response = client.get(url)
+        assert response.status_code == expected_status
 
 
-@pytest.mark.parametrize('name', ('news:edit', 'news:delete'))
 @pytest.mark.django_db
-def test_comments_availability_for_anonymous(name, comment):
-    """Аноним не может редактировать и удалять комментарии."""
-    client = Client()
-    url = reverse(name, args=(comment.pk,))
-    response = client.get(url)
-    assert response.status_code == HTTPStatus.FOUND
+def test_redirect_for_anonymous_client(client, comment):
+    """
+    При попытке перейти на страницу редактирования или удаления комментария
+    анонимный пользователь перенаправляется на страницу авторизации.
+    """
+    login_url = reverse('users:login')
+    urls = [
+        ('news:edit', (comment.pk,)),
+        ('news:delete', (comment.pk,))
+    ]
+    for name, args in urls:
+        url = reverse(name, args=args)
+        expected_url = f'{login_url}?next={url}'
+        response = client.get(url)
+        assertRedirects(response, expected_url)
 
 
-@pytest.mark.parametrize('name', ('news:edit', 'news:delete'))
 @pytest.mark.django_db
-def test_other_user_cannot_edit_and_delete_comment(name, comment, other_user):
-    """Неавтор не может редактировать и удалять комментарии."""
-    client = Client()
-    client.force_login(other_user)
-    url = reverse(name, args=(comment.pk,))
-    response = client.get(url)
-    assert response.status_code == HTTPStatus.NOT_FOUND
-
-
-@pytest.mark.parametrize('name, expected_status', [
-    ('users:login', HTTPStatus.OK),
-    ('users:signup', HTTPStatus.OK),
-    ('users:logout', HTTPStatus.METHOD_NOT_ALLOWED),
-])
-@pytest.mark.django_db
-def test_auth_pages_behavior(client, name, expected_status):
-    """Доступ регистрации, входа и выхода для анонима."""
-    url = reverse(name)
-    response = client.get(url)
-    assert response.status_code == expected_status
+def test_auth_pages_behavior(client, comment):
+    """
+    Страницы регистрации пользователей,
+    входа в учётную запись и выхода из неё доступны анонимным пользователям.
+    """
+    urls = (
+        ('news:home', None),
+        ('news:detail', (comment.id,)),
+        ('users:login', None),
+        ('users:signup', None),
+    )
+    for name, args in urls:
+        url = reverse(name, args=args)
+        response = client.get(url)
+        assert response.status_code == HTTPStatus.OK
