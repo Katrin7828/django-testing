@@ -2,7 +2,6 @@ from http import HTTPStatus
 
 import pytest
 from pytest_django.asserts import assertRedirects
-from django.urls import reverse
 from django.test import TestCase
 
 from news.models import Comment
