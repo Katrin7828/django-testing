@@ -1,10 +1,11 @@
-import pytest
+from datetime import datetime, timedelta
 
-from django.contrib.auth import get_user_model
+import pytest
+from django.test import Client
+from django.conf import settings
+from django.urls import reverse
 
 from news.models import News, Comment
-
-User = get_user_model()
 
 
 @pytest.fixture
@@ -27,47 +28,75 @@ def comment(db, news, author):
 
 
 @pytest.fixture
-def other_user():
+def other_user(django_user_model):
     """Неавтор."""
-    return User.objects.create_user(username='other_user',
-                                    password='password')
-
-
-@pytest.fixture
-def news_setup(db):
-    user = User.objects.create_user(username='1', password='123')
-    news = News.objects.create(
-        title="Тест",
-        text="Текст",
-    )
-    return user, news
+    return django_user_model.objects.create_user(username='other_user')
 
 
 @pytest.fixture
 def author(django_user_model):
-    return django_user_model.objects.create(username='Автор')
+    """Автор."""
+    return django_user_model.objects.create_user(username='Автор')
 
 
 @pytest.fixture
-def author_client(author, client):
+def author_client(author):
     """Пользователь, который будет автором комментария."""
+    client = Client()
     client.force_login(author)
     return client
 
 
 @pytest.fixture
-def comment_author_client(comment, client):
-    """Клиент, залогиненный под автором этого комментария."""
-    client.force_login(comment.author)
-    return client
+def news_list():
+    """Список новостей."""
+    return News.objects.bulk_create(
+        News(
+            title=f'Заголовок {i}',
+            text=f'Текст {i}',
+            date=datetime.today().date() - timedelta(days=i),
+        )
+        for i in range(settings.NEWS_COUNT_ON_HOME_PAGE + 1)
+    )
 
 
 @pytest.fixture
-def not_author_client(client, django_user_model):
-    """Клиент, который не является автором заметки."""
-    other_user = django_user_model.objects.create_user(
-        username='other_user',
-        password='123'
-    )
-    client.force_login(other_user)
-    return client
+def home_url():
+    """URL главной страницы."""
+    return reverse('news:home')
+
+
+@pytest.fixture
+def detail_url(news):
+    """URL страницы новости."""
+    return reverse('news:detail', args=(news.pk,))
+
+
+@pytest.fixture
+def delete_url(comment):
+    """URL удаления новости."""
+    return reverse('news:delete', args=(comment.pk,))
+
+
+@pytest.fixture
+def edit_url(comment):
+    """URL редактирования новости."""
+    return reverse('news:edit', args=(comment.pk,))
+
+
+@pytest.fixture
+def login_url():
+    """URL выхода."""
+    return reverse('users:login')
+
+
+@pytest.fixture
+def signup_url():
+    """URL регистрации."""
+    return reverse('users:signup')
+
+
+@pytest.fixture
+def comment_text_new():
+    """Новые текст для комментария."""
+    return {'text': 'Новый текст'}

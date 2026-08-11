@@ -3,17 +3,16 @@ from http import HTTPStatus
 from django.contrib.auth import get_user_model
 from django.test import Client, TestCase
 from django.urls import reverse
+from pytils.translit import slugify
 
 from notes.models import Note
 from notes.forms import WARNING
 
-from pytils.translit import slugify
 
 User = get_user_model()
 
 
 class TestNoteCreation(TestCase):
-    NOTE_TEXT = 'Текст'
 
     @classmethod
     def setUpTestData(cls):
@@ -32,6 +31,7 @@ class TestNoteCreation(TestCase):
             title='Заголовок',
             text='Текст',
             author=cls.author,
+            slug='slug',
         )
 
     def test_anonymous_user_cant_create_note(self):
@@ -62,7 +62,7 @@ class TestNoteCreation(TestCase):
         url = reverse('notes:add')
         self.data['slug'] = self.note.slug
         response = self.author_client.post(url, data=self.data)
-        self.assertFormError(response.context['form'], 'slug',
+        self.assertFormError(response.context['form'], self.note.slug,
                              errors=(self.note.slug + WARNING))
         assert Note.objects.count() == 1
 
@@ -72,15 +72,12 @@ class TestNoteCreation(TestCase):
         то он формируется автоматически.
         """
         url = reverse('notes:add')
-        data = {
-            'title': 'Новый заголовок',
-            'text': 'Новый текст',
-        }
-        response = self.author_client.post(url, data=data)
-        self.assertEqual(response.status_code, 302)
+        self.data.pop('slug', None)
+        response = self.author_client.post(url, data=self.data)
+        self.assertEqual(response.status_code, HTTPStatus.FOUND)
         self.assertEqual(Note.objects.count(), 2)
         new_note = Note.objects.order_by('-id').first()
-        expected_slug = slugify(data['title'])
+        expected_slug = slugify(self.data['title'])
         self.assertEqual(new_note.slug, expected_slug)
 
     def test_author_can_delete_note(self):
