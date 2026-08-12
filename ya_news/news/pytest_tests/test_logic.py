@@ -1,20 +1,18 @@
 from http import HTTPStatus
 
 import pytest
-from pytest_django.asserts import assertRedirects
-from django.test import TestCase
+from pytest_django.asserts import assertRedirects, assertFormError
 
 from news.models import Comment
 from news.forms import BAD_WORDS, WARNING
 
 
 @pytest.mark.django_db
-def test_user_can_create_comment(client, news, author, comment_text_new,
-                                 detail_url):
+def test_user_can_create_comment(news, author, author_client, comment_text_new,
+                                 detail_url, detail_comments):
     """Авторизованный пользователь может отправить комментарий."""
-    client.force_login(author)
-    response = client.post(detail_url, data=comment_text_new)
-    assertRedirects(response, f'{detail_url}#comments')
+    response = author_client.post(detail_url, data=comment_text_new)
+    assertRedirects(response, detail_comments)
     comments_count = Comment.objects.count()
     assert comments_count == 1
     comment = Comment.objects.get()
@@ -41,8 +39,7 @@ def test_user_cant_use_bad_words(author_client, detail_url):
     bad_words_data = {'text': f'Какой-то текст, {BAD_WORDS[0]}, еще текст'}
     response = author_client.post(detail_url, data=bad_words_data)
     assert response.status_code == HTTPStatus.OK
-    test_case = TestCase()
-    test_case.assertFormError(
+    assertFormError(
         response.context['form'],
         'text',
         WARNING,
@@ -53,44 +50,41 @@ def test_user_cant_use_bad_words(author_client, detail_url):
 
 @pytest.mark.django_db
 def test_author_can_edit_comment(author_client, detail_url, edit_url,
-                                 comment_text_new, comment):
+                                 comment_text_new, comment, detail_comments):
     """Авторизованный пользователь может редактировать свои комментарии."""
-    url_to_comments = detail_url + '#comments'
     response = author_client.post(edit_url, data=comment_text_new)
-    assertRedirects(response, url_to_comments)
+    assertRedirects(response, detail_comments)
     comment.refresh_from_db()
     assert comment.text == comment_text_new['text']
 
 
 @pytest.mark.django_db
-def test_author_can_delete_comment(author_client, detail_url, delete_url,
-                                   comment_text_new):
+def test_author_can_delete_comment(author_client, delete_url,
+                                   comment_text_new, detail_comments):
     """Авторизованный пользователь может удалять свои комментарии."""
-    url_to_comments = detail_url + '#comments'
     response = author_client.delete(delete_url, data=comment_text_new)
-    assertRedirects(response, url_to_comments)
+    assertRedirects(response, detail_comments)
     assert response.status_code == HTTPStatus.FOUND
     comments_count = Comment.objects.count()
     assert comments_count == 0
 
 
 @pytest.mark.django_db
-def test_other_user_cant_edit_comment(admin_client, comment, edit_url):
+def test_other_user_cant_edit_comment(admin_client, comment, edit_url,
+                                      comment_text_new):
     """Авторизованный пользователь не может редактировать чужие комментарии."""
-    comment_pk = comment.pk
     original_text = comment.text
-    form_data = {'text': 'Обновлённый комментарий'}
-    response = admin_client.post(edit_url, data=form_data)
+    response = admin_client.post(edit_url, data=comment_text_new)
     assert response.status_code == HTTPStatus.NOT_FOUND
-    comment_from_db = Comment.objects.get(pk=comment_pk)
+    comment_from_db = Comment.objects.get(pk=comment.pk)
     assert comment_from_db.text == original_text
 
 
 @pytest.mark.django_db
-def test_other_user_cant_delete_comment(admin_client, delete_url):
+def test_other_user_cant_delete_comment(admin_client, delete_url,
+                                        comment_text_new):
     """Авторизованный пользователь не может редактировать чужие комментарии."""
-    form_data = {'text': 'Обновлённый комментарий'}
-    response = admin_client.post(delete_url, data=form_data)
+    response = admin_client.post(delete_url, data=comment_text_new)
     assert response.status_code == HTTPStatus.NOT_FOUND
     comments_count = Comment.objects.count()
     assert comments_count == 1

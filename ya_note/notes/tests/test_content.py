@@ -11,10 +11,8 @@ class TestNotesListLogic(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-        cls.author = User.objects.create_user(username='author',
-                                              password='pass')
-        cls.other_user = User.objects.create_user(username='other_user',
-                                                  password='pass')
+        cls.author = User.objects.create_user(username='author')
+        cls.other_user = User.objects.create_user(username='other_user')
         cls.note = Note.objects.create(
             title='Заметка первого',
             text='Текст заметки',
@@ -25,9 +23,8 @@ class TestNotesListLogic(TestCase):
         cls.author_client.force_login(cls.author)
         cls.other_user_client = Client()
         cls.other_user_client.force_login(cls.other_user)
-
-    def setUp(self):
-        self.client.login(username='author', password='pass')
+        cls.add_url = reverse('notes:add')
+        cls.edit_url = reverse('notes:edit', args=(cls.note.slug,))
 
     def test_object_list(self):
         """
@@ -47,12 +44,11 @@ class TestNotesListLogic(TestCase):
 
     def test_add_and_edit_page(self):
         """На страницы создания и редактирования заметки передаются формы."""
-        url = (
-            ('notes:add', None),
-            ('notes:edit', (self.note.slug,)),
+        urls = (
+            self.add_url,
+            self.edit_url,
         )
-        for name, args in url:
+        for url in urls:
             with self.subTest():
-                url = reverse(name, args=args)
                 response = self.author_client.get(url)
                 self.assertIn('form', response.context)

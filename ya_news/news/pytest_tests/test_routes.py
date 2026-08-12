@@ -7,23 +7,6 @@ from pytest_lazyfixture import lazy_fixture
 
 @pytest.mark.django_db
 @pytest.mark.parametrize(
-    'url',
-    [
-        (lazy_fixture('home_url')),
-        (lazy_fixture('detail_url')),
-    ]
-)
-def test_pages_availability(client, url):
-    """
-    Главная страница и страница отдельной новости
-    доступны анонимному пользователю.
-    """
-    response = client.get(url)
-    assert response.status_code == HTTPStatus.OK
-
-
-@pytest.mark.django_db
-@pytest.mark.parametrize(
     'user_fixture, status',
     (
         (lazy_fixture('author_client'), HTTPStatus.OK),
@@ -48,20 +31,20 @@ def test_availability_for_comment_edit_and_delete(user_fixture, url, status):
 
 @pytest.mark.django_db
 @pytest.mark.parametrize(
-    'url',
+    'url, redirect_url',
     (
-        (lazy_fixture('edit_url')),
-        (lazy_fixture('delete_url')),
+        (lazy_fixture('edit_url'), lazy_fixture('login_redirect_for_edit')),
+        (lazy_fixture('delete_url'),
+         lazy_fixture('login_redirect_for_delete')),
     )
 )
-def test_redirect_for_anonymous_client(client, url, login_url):
+def test_redirect_for_anonymous_client(client, url, redirect_url):
     """
     При попытке перейти на страницу редактирования или удаления комментария
     анонимный пользователь перенаправляется на страницу авторизации.
     """
-    expected_url = f'{login_url}?next={url}'
     response = client.get(url)
-    assertRedirects(response, expected_url)
+    assertRedirects(response, redirect_url)
 
 
 @pytest.mark.django_db

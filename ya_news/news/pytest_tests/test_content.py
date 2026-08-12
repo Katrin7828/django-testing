@@ -4,25 +4,27 @@ import pytest
 from pytest_lazyfixture import lazy_fixture
 from django.conf import settings
 
+from news.forms import CommentForm
+
 
 @pytest.mark.django_db
-def test_news_count(home_url, client, news_list):
+@pytest.mark.usefixtures('news_list')
+def test_news_count(home_url, client):
     """Количество новостей на главной странице — не более 10."""
-    assert len(news_list) >= settings.NEWS_COUNT_ON_HOME_PAGE
     response = client.get(home_url)
     assert 'object_list' in response.context
     object_list = response.context['object_list']
-    news_count = len(object_list)
+    news_count = object_list.count()
     assert news_count == settings.NEWS_COUNT_ON_HOME_PAGE
 
 
 @pytest.mark.django_db
-def test_news_order(client, home_url, news_list):
+@pytest.mark.usefixtures('news_list')
+def test_news_order(client, home_url):
     """
     Новости отсортированы от самой свежей к самой старой.
     Свежие новости в начале списка.
     """
-    assert len(news_list) >= settings.NEWS_COUNT_ON_HOME_PAGE
     response = client.get(home_url)
     assert 'object_list' in response.context
     object_list = response.context['object_list']
@@ -31,7 +33,8 @@ def test_news_order(client, home_url, news_list):
 
 
 @pytest.mark.django_db
-def test_comments_order(client, news_list, detail_url):
+@pytest.mark.usefixtures('news_list')
+def test_comments_order(client, detail_url):
     """
     Комментарии на странице отдельной новости отсортированы в хронологическом
     порядке: старые в начале списка, новые — в конце.
@@ -47,17 +50,20 @@ def test_comments_order(client, news_list, detail_url):
 
 
 @pytest.mark.parametrize(
-    'parametrized_client, status',
+    'parametrized_client, should_have_form',
     (
         (lazy_fixture('client'), False),
         (lazy_fixture('author_client'), True)
     ),
 )
 @pytest.mark.django_db
-def test_anonymous_client_has_no_form(parametrized_client, status, detail_url):
+def test_anonymous_client_has_no_form(parametrized_client, should_have_form,
+                                      detail_url):
     """
     Анонимному пользователю недоступна форма для отправки комментария
     на странице отдельной новости, а авторизованному доступна.
     """
     response = parametrized_client.get(detail_url)
-    assert ('form' in response.context) is status
+    assert ('form' in response.context) == should_have_form
+    if should_have_form:
+        assert isinstance(response.context['form'], CommentForm)

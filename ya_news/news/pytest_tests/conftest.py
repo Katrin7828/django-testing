@@ -100,3 +100,21 @@ def signup_url():
 def comment_text_new():
     """Новые текст для комментария."""
     return {'text': 'Новый текст'}
+
+
+@pytest.fixture
+def detail_comments(detail_url):
+    """Редирект комментария."""
+    return f'{detail_url}#comments'
+
+
+@pytest.fixture
+def login_redirect_for_edit(login_url, edit_url):
+    """URL редиректа для редактирования комментария."""
+    return f'{login_url}?next={edit_url}'
+
+
+@pytest.fixture
+def login_redirect_for_delete(login_url, delete_url):
+    """URL редиректа для удаления комментария."""
+    return f'{login_url}?next={delete_url}'

@@ -63,7 +63,7 @@ class TestNoteCreation(TestCase):
         self.data['slug'] = self.note.slug
         response = self.author_client.post(url, data=self.data)
         self.assertFormError(response.context['form'], self.note.slug,
-                             errors=(self.note.slug + WARNING))
+                             errors=(self.data['slug'] + WARNING))
         assert Note.objects.count() == 1
 
     def test_empty_lug(self):

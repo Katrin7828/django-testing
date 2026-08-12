@@ -13,14 +13,11 @@ class TestRoutes(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-        cls.user = User.objects.create_user(username='test_user',
-                                            password='password')
-        cls.other_user = User.objects.create_user(username='other_user',
-                                                  password='password')
+        cls.user = User.objects.create_user(username='test_user')
+        cls.other_user = User.objects.create_user(username='other_user')
         cls.other_client = Client()
         cls.other_client.force_login(cls.other_user)
-        cls.author = User.objects.create_user(username='author',
-                                              password='password')
+        cls.author = User.objects.create_user(username='author')
         cls.author_client = Client()
         cls.author_client.force_login(cls.author)
         cls.note = Note.objects.create(
@@ -39,6 +36,8 @@ class TestRoutes(TestCase):
 
     def test_pages_availability(self):
         """Доступ страниц для аутентифицированного пользователя."""
+        # Я объединила первые два теста из ТЗ по этому файлу,
+        # оттуда и home появился
         urls = [
             self.home_url,
             self.list_url,
