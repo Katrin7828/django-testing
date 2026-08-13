@@ -49,7 +49,7 @@ def test_user_cant_use_bad_words(author_client, detail_url):
 
 
 @pytest.mark.django_db
-def test_author_can_edit_comment(author_client, detail_url, edit_url,
+def test_author_can_edit_comment(author_client, edit_url,
                                  comment_text_new, comment, detail_comments):
     """Авторизованный пользователь может редактировать свои комментарии."""
     response = author_client.post(edit_url, data=comment_text_new)
@@ -73,11 +73,10 @@ def test_author_can_delete_comment(author_client, delete_url,
 def test_other_user_cant_edit_comment(admin_client, comment, edit_url,
                                       comment_text_new):
     """Авторизованный пользователь не может редактировать чужие комментарии."""
-    original_text = comment.text
     response = admin_client.post(edit_url, data=comment_text_new)
     assert response.status_code == HTTPStatus.NOT_FOUND
     comment_from_db = Comment.objects.get(pk=comment.pk)
-    assert comment_from_db.text == original_text
+    assert comment_from_db.text == comment.text
 
 
 @pytest.mark.django_db

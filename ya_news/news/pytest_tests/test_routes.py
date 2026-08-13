@@ -7,7 +7,7 @@ from pytest_lazyfixture import lazy_fixture
 
 @pytest.mark.django_db
 @pytest.mark.parametrize(
-    'user_fixture, status',
+    'client_fixture, status',
     (
         (lazy_fixture('author_client'), HTTPStatus.OK),
         (lazy_fixture('admin_client'), HTTPStatus.NOT_FOUND),
@@ -20,12 +20,12 @@ from pytest_lazyfixture import lazy_fixture
         (lazy_fixture('delete_url')),
     )
 )
-def test_availability_for_comment_edit_and_delete(user_fixture, url, status):
+def test_availability_for_comment_edit_and_delete(client_fixture, url, status):
     """
     Страницы удаления и редактирования комментария
     доступны автору комментария, но недоступны другому пользователю (404).
     """
-    response = user_fixture.get(url)
+    response = client_fixture.get(url)
     assert response.status_code == status
 
 

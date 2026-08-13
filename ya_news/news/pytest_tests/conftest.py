@@ -4,8 +4,11 @@ import pytest
 from django.test import Client
 from django.conf import settings
 from django.urls import reverse
+from django.contrib.auth import get_user_model
 
 from news.models import News, Comment
+
+User = get_user_model()
 
 
 @pytest.fixture
@@ -44,6 +47,15 @@ def author_client(author):
     """Пользователь, который будет автором комментария."""
     client = Client()
     client.force_login(author)
+    return client
+
+
+@pytest.fixture
+def admin_client(db):
+    """Пользователь, который будет автором комментария."""
+    client = Client()
+    admin_client = User.objects.create_superuser(username='admin_client')
+    client.force_login(admin_client)
     return client
 
 
