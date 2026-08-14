@@ -51,11 +51,10 @@ def author_client(author):
 
 
 @pytest.fixture
-def admin_client(db):
+def admin_client(other_user):
     """Пользователь, который будет автором комментария."""
     client = Client()
-    admin_client = User.objects.create_superuser(username='admin_client')
-    client.force_login(admin_client)
+    client.force_login(other_user)
     return client
 
 
