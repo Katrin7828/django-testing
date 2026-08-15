@@ -33,6 +33,7 @@ class TestRoutes(TestCase):
         cls.edit_url = reverse('notes:edit', args=(cls.note.slug,))
         cls.delete_url = reverse('notes:delete', args=(cls.note.slug,))
         cls.detail_url = reverse('notes:detail', args=(cls.note.slug,))
+        cls.logout_url = reverse('users:logout')
 
     def test_pages_availability(self):
         """Доступ страниц для аутентифицированного пользователя."""
@@ -106,6 +107,5 @@ class TestRoutes(TestCase):
 
     def test_logout_can(self):
         """Страница выхода из учетной записи доступна всем пользователям."""
-        logout_url = reverse('users:logout')
-        response = self.client.post(logout_url)
+        response = self.client.post(self.logout_url)
         self.assertEqual(response.status_code, HTTPStatus.OK)

@@ -52,7 +52,7 @@ def author_client(author):
 
 @pytest.fixture
 def admin_client(other_user):
-    """Пользователь, который будет автором комментария."""
+    """Клиент для неавтора."""
     client = Client()
     client.force_login(other_user)
     return client

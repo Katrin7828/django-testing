@@ -38,13 +38,13 @@ class TestNoteCreation(TestCase):
         cls.delete_url = reverse('notes:delete', args=(cls.note.slug,))
         cls.edit_url = reverse('notes:edit', args=(cls.note.slug,))
         cls.login_url = reverse('users:login')
+        cls.expected_url = f'{cls.login_url}?next={cls.add_url}'
 
     def test_anonymous_user_cant_create_note(self):
         """Анонимный пользователь не может создавать заметки."""
         initial_count = Note.objects.count()
         response = self.client.post(self.add_url, self.data)
-        expected_url = f'{self.login_url}?next={self.add_url}'
-        self.assertRedirects(response, expected_url)
+        self.assertRedirects(response, self.expected_url)
         self.assertEqual(Note.objects.count(), initial_count)
 
     def test_user_can_create_note(self):
