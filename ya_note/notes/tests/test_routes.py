@@ -34,6 +34,7 @@ class TestRoutes(TestCase):
         cls.delete_url = reverse('notes:delete', args=(cls.note.slug,))
         cls.detail_url = reverse('notes:detail', args=(cls.note.slug,))
         cls.logout_url = reverse('users:logout')
+        cls.login_url = reverse('users:login')
 
     def test_pages_availability(self):
         """Доступ страниц для аутентифицированного пользователя."""
@@ -78,7 +79,6 @@ class TestRoutes(TestCase):
         редактирования или удаления заметки анонимный пользователь
         перенаправляется на страницу логина.
         """
-        login_url = reverse('users:login')
         urls = (
             self.add_url,
             self.list_url,
@@ -88,7 +88,9 @@ class TestRoutes(TestCase):
         )
         for url in urls:
             with self.subTest(url=url):
-                redirect_url = f'{login_url}?next={url}'
+                redirect_url = f'{self.login_url}?next={url}'
+                # тут, получается, не получится вынести это,
+                # тк перебираем url из списка
                 response = self.client.get(url)
                 self.assertRedirects(response, redirect_url)
 
