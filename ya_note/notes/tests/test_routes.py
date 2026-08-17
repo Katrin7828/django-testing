@@ -35,6 +35,7 @@ class TestRoutes(TestCase):
         cls.detail_url = reverse('notes:detail', args=(cls.note.slug,))
         cls.logout_url = reverse('users:logout')
         cls.login_url = reverse('users:login')
+        cls.signup_url = reverse('users:signup')
 
     def test_pages_availability(self):
         """Доступ страниц для аутентифицированного пользователя."""
@@ -99,11 +100,13 @@ class TestRoutes(TestCase):
         Страницы регистрации пользователей,
         входа в учётную запись доступны всем пользователям.
         """
-        auth_names = ['notes:home', 'users:login',
-                      'users:signup']
-        for name in auth_names:
-            with self.subTest(name=name):
-                url = reverse(name)
+        urls = (
+            self.home_url,
+            self.login_url,
+            self.signup_url,
+        )
+        for url in urls:
+            with self.subTest(url=url):
                 response = self.client.get(url)
                 self.assertEqual(response.status_code, HTTPStatus.OK)
 
